@@ -44,8 +44,7 @@ class CryptoReporter extends ReporterBase {
                 rsi: currentRsi,
                 divergence: this._analyzeDivergenceRaw(candles, rsiArray),
                 volumeRatio: this._calculateVolumeRatio(candles),
-                fngScore: this._fetchFngScore(),
-                mvrvScore: this._fetchMvrvScore(this.ticker)
+                fngScore: this._fetchFngScore()
             }
         };
     }
@@ -91,15 +90,15 @@ class CryptoReporter extends ReporterBase {
 3. RSI(14): ${data.indicators.rsi} (${this._getRsiStatus(data.indicators.rsi)})
 4. 다이버전스: ${this._getDivergenceStatus(data.indicators.divergence)}
 5. 거래량: ${this._getVolumeStatus(data.indicators.volumeRatio)}
-6. MVRV(온체인): ${this._getMvrvStatus(data.indicators.mvrvScore)}
-7. 공포탐욕지수: ${this._getFngStatus(data.indicators.fngScore)}
+6. 공포탐욕지수: ${this._getFngStatus(data.indicators.fngScore)}
 
 [필수 검색 및 분석 지침 (Search Instructions)]
 **Google 검색 도구를 적극 활용하여 아래 내용을 리포트에 반드시 포함하십시오:**
-1. **가격 변동 원인 파악:** 오늘 혹은 최근 24시간 내에 ${data.ticker} 가격에 영향을 미친 주요 뉴스(호재/악재, 규제, 해킹, 거시경제 이슈 등)를 검색하여 "시황 분석" 파트에 구체적으로 서술하십시오.
-2. **데이터와 뉴스 연결:** - 예: "가격이 급락했는데(데이터), 검색해보니 SEC 소송 뉴스가 원인이었다(뉴스)."
+1. **MVRV Z-Score 확인 (필수):** "${data.ticker} MVRV Z-Score ${today}" 또는 "Bitcoin MVRV ratio today"로 검색하여 **오늘(${today}) 기준** 최신 MVRV 수치를 찾아 리포트에 포함하십시오.
+2. **가격 변동 원인 파악:** 오늘 혹은 최근 24시간 내에 ${data.ticker} 가격에 영향을 미친 주요 뉴스(호재/악재, 규제, 해킹, 거시경제 이슈 등)를 검색하여 "시황 분석" 파트에 구체적으로 서술하십시오.
+3. **데이터와 뉴스 연결:** - 예: "가격이 급락했는데(데이터), 검색해보니 SEC 소송 뉴스가 원인이었다(뉴스)."
     - 예: "거래량이 폭발했는데(데이터), 이는 바이낸스 상장 이슈 때문이다(뉴스)."
-3. **최신 전망 확인:** 유명 트레이더나 기관의 최신 ${data.ticker} 분석 의견이 있다면 짧게 인용하십시오.
+4. **최신 전망 확인:** 유명 트레이더나 기관의 최신 ${data.ticker} 분석 의견이 있다면 짧게 인용하십시오.
 
 [리포트 작성 양식]
 1. **헤드라인** 
@@ -243,7 +242,7 @@ class CryptoReporter extends ReporterBase {
             const url = 'https://api.alternative.me/fng/';
             const res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
             if (res.getResponseCode() !== 200) {
-                console.warn('FNG Fetch Error. Code: ' + res.getResponseCode());
+                console.warn('FNG Fetch Error. Code: ' + res.getResponseCode() + ', Body: ' + res.getContentText());
                 return null;
             }
 
@@ -257,32 +256,6 @@ class CryptoReporter extends ReporterBase {
             return parseInt(json.data[0].value, 10);
         } catch (e) {
             console.warn('FNG Fetch Error: ' + e.toString());
-            return null;
-        }
-    }
-
-    // 4. MVRV Z-Score 점수만 가져오기 (Return: Number(float) or null)
-    _fetchMvrvScore(ticker) {
-        if (ticker !== 'BTC') return null; // BTC 아님
-
-        try {
-            const url = 'https://api.blockchain.info/charts/mvrv-z-score?timespan=5weeks&format=json';
-            const res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
-            if (res.getResponseCode() !== 200) {
-                console.warn('MVRV Fetch Error. Code: ' + res.getResponseCode());
-                return null;
-            }
-
-            const json = JSON.parse(res.getContentText());
-            if (!json.values || json.values.length === 0) {
-                console.warn('MVRV Fetch Error. Json: ' + json);
-                return null;
-            }
-
-            // 마지막 값(최신)의 y값 추출
-            return json.values[json.values.length - 1].y;
-        } catch (e) {
-            console.warn('MVRV Fetch Error: ' + e.toString());
             return null;
         }
     }
@@ -326,17 +299,13 @@ class CryptoReporter extends ReporterBase {
 
         return 'N/A';
     }
+}
 
-    _getMvrvStatus(score) {
-        if (score !== null) {
-            const scoreStr = score.toFixed(2);
+function _testCryptoPrompt() {
+    reporter = new CryptoReporter('ETH');
+    console.log('prompt', reporter.generatePrompt(reporter.fetchData()));
+}
 
-            if (score < 0) return `🟢 역사적 저점 (강력 매수 구간, 점수: ${scoreStr})`;
-            if (score < 2) return `🟢 적정 가치 (매집 구간, 점수: ${scoreStr})`;
-            if (score < 4) return `🟡 상승장 과열 (주의 필요, 점수: ${scoreStr})`;
-            return `🔴 고평가/위험 (고점 징후/매도 권장, 점수: ${scoreStr})`;
-        }
-
-        return 'N/A';
-    }
+function _testCryptoReporter() {
+    new CryptoReporter('ETH').execute();
 }
