@@ -85,7 +85,7 @@ class ReporterBase {
             const data = injectedData || this.fetchData();
             if (!data) throw new Error("데이터를 가져올 수 없습니다.");
 
-            const prompt = this.generatePrompt(data);
+            const prompt = this.generatePrompt(data).trimStart();
             console.log('prompt', prompt);
 
             // --- 이하 공통 동작 ---
