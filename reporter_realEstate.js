@@ -2,8 +2,8 @@ class RealEstateReporter extends ReporterBase {
     constructor() {
         super();
 
-        // this.botToken = Telegram.RainyFog.BotToken;
-        // this.chatId = Telegram.RainyFog.ChatId_알림;
+        this.botToken = Telegram.RainyFog.BotToken;
+        this.chatId = Telegram.RainyFog.ChatId_알림;
 
         this.type = ReportType.RealEstate;
         this.title = `이사 계획 점검 리포트`;
@@ -155,7 +155,6 @@ ${this.searchKeywords.map(k => `- "${k}"`).join('\n')}
             .map(month => `- ${month}: ${byMonth[month].join(', ')}`)
             .join('\n');
     }
-
 }
 
 
@@ -283,10 +282,10 @@ function _testRealEstateReporter() {
     new RealEstateReporter().execute();
 }
 
-function _testRainyfogTelegram() {
-    reporter = new RealEstateReporter();
-    sendTelegram(reporter.botToken, reporter.chatId, `알림 테스트`);
-}
+// function _testRainyfogTelegram() {
+//     reporter = new RealEstateReporter();
+//     sendTelegram(reporter.botToken, reporter.chatId, `알림 테스트`);
+// }
 
 
 
