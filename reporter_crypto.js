@@ -96,6 +96,7 @@ class CryptoReporter extends ReporterBase {
 **Google 검색 도구를 적극 활용하여 아래 내용을 리포트에 반드시 포함하십시오:**
 
 1. **BTC MVRV Ratio 확인 (필수 - 시장 과열도 판단 지표):**
+   - **주의:** "MVRV Ratio"를 검색하십시오. "MVRV Z-Score"는 다른 지표이므로 혼동하지 마십시오.
    - **검색 대상:** 반드시 **비트코인(BTC)** MVRV Ratio를 검색하십시오. (알트코인 MVRV는 신뢰할 수 있는 실시간 데이터 소스가 없으므로, BTC MVRV를 암호화폐 시장 전반의 과열도 지표로 활용)
    - **참고 사이트 (신뢰도 높은 순):**
      - blockchain.com/explorer/charts/mvrv (무료, 실시간)
