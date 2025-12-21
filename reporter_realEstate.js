@@ -109,26 +109,24 @@ ${this.searchKeywords.map(k => `- "${k}"`).join('\n')}
 
     /**
      * 월별 × 면적별 stats를 텍스트로 포맷팅
-     * @param {Object} stats - { '2024-12': { '147.23': { avg, count }, ... }, ... }
+     * @param {Array} stats - [{ month, area, count, avg }, ...]
      */
     _formatStatsText(stats) {
-        const sortedMonths = Object.keys(stats).sort().reverse();
-        if (sortedMonths.length === 0) return "거래 내역 없음";
+        if (!stats || stats.length === 0) return "거래 내역 없음";
 
-        let lines = [];
-        for (const month of sortedMonths) {
-            const areas = stats[month];
-            const areaTexts = Object.keys(areas)
-                .sort((a, b) => parseFloat(a) - parseFloat(b))
-                .map(area => {
-                    const { avg, count } = areas[area];
-                    const avgEok = Math.round(avg / 1000) / 10;
-                    const pyeong = Math.round(parseFloat(area) / 3.3058);
-                    return `${pyeong}평(${area}㎡) ${avgEok}억×${count}건`;
-                });
-            lines.push(`- ${month}: ${areaTexts.join(', ')}`);
-        }
-        return lines.join('\n');
+        // 월별로 그룹화
+        const byMonth = {};
+        stats.forEach(({ month, area, count, avg }) => {
+            if (!byMonth[month]) byMonth[month] = [];
+            const avgEok = Math.round(avg / 1000) / 10;
+            const pyeong = Math.round(area / 3.3058);
+            byMonth[month].push(`${pyeong}평(${area}㎡) ${avgEok}억×${count}건`);
+        });
+
+        return Object.keys(byMonth)
+            .sort().reverse()
+            .map(month => `- ${month}: ${byMonth[month].join(', ')}`)
+            .join('\n');
     }
 
 }
@@ -146,7 +144,7 @@ class AptTradeFetcher {
 
     /**
      * 특정 타겟의 N개월치 실거래 데이터를 수집하여 월별×면적별 통계로 반환
-     * @returns {Object} { '2024-12': { '147.23': { avg, count }, ... }, ... }
+     * @returns {Array} [{ month, area, count, avg }, ...]
      */
     fetch(targetConfig, lookBackMonths = 6) {
         const months = this._getPastMonths(lookBackMonths);
@@ -199,35 +197,31 @@ class AptTradeFetcher {
 
     /**
      * 월별 × 면적별 평균 가격(만원 단위)과 거래 건수 계산
-     * @returns {Object} { '2024-12': { '147.23': { avg: 55000, count: 2 }, ... }, ... }
+     * @returns {Array} [{ month, area, count, avg }, ...]
      */
     _calcStats(dataList) {
-        let tempMap = {}; // { ym: { area: { sum, count } } }
+        let tempMap = {}; // { 'ym|area': { sum, count } }
 
         // 합계 및 건수 집계
         for (const item of dataList) {
-            const ym = item.date.substring(0, 7); // "2024-12"
-            const area = item.area.toFixed(2); // 면적을 키로 사용
+            const month = item.date.substring(0, 7); // "2024-12"
+            const area = parseFloat(item.area.toFixed(2));
+            const key = `${month}|${area}`;
 
-            if (!tempMap[ym]) tempMap[ym] = {};
-            if (!tempMap[ym][area]) tempMap[ym][area] = { sum: 0, count: 0 };
-
-            tempMap[ym][area].sum += item.price;
-            tempMap[ym][area].count += 1;
+            if (!tempMap[key]) tempMap[key] = { month, area, sum: 0, count: 0 };
+            tempMap[key].sum += item.price;
+            tempMap[key].count += 1;
         }
 
-        // 평균 계산
-        let finalStats = {};
-        for (const ym in tempMap) {
-            finalStats[ym] = {};
-            for (const area in tempMap[ym]) {
-                const data = tempMap[ym][area];
-                finalStats[ym][area] = {
-                    avg: Math.round(data.sum / data.count),
-                    count: data.count
-                };
-            }
-        }
+        // 평균 계산 및 리스트 변환
+        return Object.values(tempMap)
+            .map(({ month, area, sum, count }) => ({
+                month,
+                area,
+                count,
+                avg: Math.round(sum / count)
+            }))
+            .sort((a, b) => b.month.localeCompare(a.month) || a.area - b.area);
 
         return finalStats;
     }
