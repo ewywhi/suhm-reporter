@@ -23,7 +23,7 @@ class RealEstateReporter extends ReporterBase {
                 { name: '용인 모현(힐스테이트)', code: '41461', dong: '모현읍', apt: '힐스테이트' }
             ]
         };
-        this.aptService = new AptTransactionService(this.dataPortalConfig.decodingKey);
+        this.tradeFetcher = new AptTradeFetcher(this.dataPortalConfig.decodingKey);
 
         // Gemini 검색 키워드 (useSearch=true 이므로 Gemini가 직접 검색)
         this.searchKeywords = ['경기 광주 신현동 교통 호재', '신현동 8호선 태재고개', '오포 e편한세상 시세'];
@@ -34,16 +34,16 @@ class RealEstateReporter extends ReporterBase {
         const months = config.lookBackMonths;
 
         // 실거래 데이터 수집 (뉴스는 Gemini 검색으로 대체 - useSearch=true)
-        const target = this.aptService.getAnalysis(config.target, months);
+        const target = this.tradeFetcher.fetch(config.target, months);
 
         const benchmarks = {};
         config.benchmarks.forEach(b => {
-            benchmarks[b.name] = this.aptService.getAnalysis(b, months);
+            benchmarks[b.name] = this.tradeFetcher.fetch(b, months);
         });
 
         const substitutes = {};
         config.substitutes.forEach(s => {
-            substitutes[s.name] = this.aptService.getAnalysis(s, months);
+            substitutes[s.name] = this.tradeFetcher.fetch(s, months);
         });
 
         return {
@@ -136,19 +136,19 @@ ${this.searchKeywords.map(k => `- "${k}"`).join('\n')}
 
 
 /**
- * 국토부 실거래가 데이터 처리 전담 클래스
- * 역할: 수집(Fetch) -> 정제(Parse) -> 통계(Stats) -> 포맷팅(Format)
+ * 공공데이터포털 아파트 실거래가 Fetcher
+ * 역할: 수집(Fetch) -> 정제(Parse) -> 월별×면적별 집계(Stats)
  */
-class AptTransactionService {
+class AptTradeFetcher {
     constructor(decodingKey) {
         this.decodingKey = decodingKey;
     }
 
     /**
-     * 메인 메서드: 특정 타겟의 N개월치 데이터를 수집하고 분석하여 반환
-     * @returns {Object} 월별 × 면적별 평균가격/건수 { '2024-12': { '147.23': { avg, count }, ... }, ... }
+     * 특정 타겟의 N개월치 실거래 데이터를 수집하여 월별×면적별 통계로 반환
+     * @returns {Object} { '2024-12': { '147.23': { avg, count }, ... }, ... }
      */
-    getAnalysis(targetConfig, lookBackMonths = 6) {
+    fetch(targetConfig, lookBackMonths = 6) {
         const months = this._getPastMonths(lookBackMonths);
         const rawData = this._fetchRawData(targetConfig, months);
         return this._calcStats(rawData);
