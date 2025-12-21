@@ -17,7 +17,7 @@ class ReporterBase {
         this.chatId = Telegram.Dylee.ChatId_General;
 
         // Gemini
-        this.apiKey = 'API_KEY_HERE';
+        this.apiKey = GEMINI.API_KEY;;
         this.summaryModelName = 'gemini-flash-latest';
         this.reportModelName = 'gemini-flash-latest';
         this.useSearch = false;
