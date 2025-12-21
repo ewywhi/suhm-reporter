@@ -4,10 +4,10 @@ class RealEstateReporter extends ReporterBase {
 
         this.botToken = Telegram.RainyFog.BotToken;
         this.chatId = Telegram.RainyFog.ChatId_알림;
+        this.useSearch = true;
 
         this.type = ReportType.RealEstate;
         this.title = `이사 계획 점검 리포트`;
-        this.useSearch = true;
 
         // 공공 데이터 포털 설정
         this.dataPortalConfig = {
