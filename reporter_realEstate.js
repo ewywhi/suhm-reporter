@@ -24,17 +24,12 @@ class RealEstateReporter extends ReporterBase {
             { name: '용인 모현(힐스테이트)', code: '41461', dong: '모현읍', apt: '힐스테이트' }
         ];
 
-        // 네이버
-        this.naverClientId = 'Ei782oYZ1s74TOFByByK';
-        this.naverClientSecret = 'frHH07HSSN';
-        this.naverSearchKeyword = '신현동 (교통 | 호재 | 호선 | 태재고개)';
+        // Gemini 검색 키워드 (useSearch=true 이므로 Gemini가 직접 검색)
+        this.searchKeywords = ['경기 광주 신현동 교통 호재', '신현동 8호선 태재고개', '오포 e편한세상 시세'];
     }
 
     fetchData() {
-        // 네이버 뉴스 검색
-        const news = this.getNaverNews(this.naverSearchKeyword);
-
-        // 실거래 데이터 수집
+        // 실거래 데이터 수집 (뉴스는 Gemini 검색으로 대체 - useSearch=true)
         const target = this.aptService.getAnalysis(this.dataTarget, 6);
 
         const abench = {};
@@ -48,7 +43,6 @@ class RealEstateReporter extends ReporterBase {
         });
 
         return {
-            news: news,
             target: target,
             benchmarks: abench,
             substitues: sub,
@@ -83,14 +77,16 @@ ${benchText}
 **(3) 대체지 흐름 (공급)**
 ${subText}
 
-**(4) 뉴스 (키워드: ${this.naverSearchKeyword})**
-${data.news}
+---
+### 2. 웹 검색 요청
+위 실거래 데이터 분석 전, 아래 키워드로 최신 뉴스/기사를 검색하여 참고하십시오:
+${this.searchKeywords.map(k => `- "${k}"`).join('\n')}
 
 ---
-### 2. 작성 요청 사항 (분석 프레임워크)
+### 3. 작성 요청 사항 (분석 프레임워크)
 
 **Step 1: 타겟 자체 경쟁력 분석**
-- 뉴스에 언급된 이슈(교통, 호재 등)가 현재 시세에 반영되었는지, 선반영인지 분석.
+- 검색한 뉴스에서 언급된 이슈(교통, 호재 등)가 현재 시세에 반영되었는지, 선반영인지 분석.
 - 거래량 증감 추세를 보고 매수 심리를 판단.
 
 **Step 2: 비교군(Benchmark) 대비 가성비(Gap) 분석**
@@ -130,54 +126,6 @@ ${data.news}
         return lines.join('\n');
     }
 
-    // --- Helper Methods ---
-
-    /**
-     * 네이버 뉴스 검색 API
-     * 키워드: 신현동 + (교통 OR 호재 OR 8호선)
-     */
-    getNaverNews(keyword) {
-        const encodedQuery = encodeURIComponent(keyword); // 검색어 URL 인코딩 필요
-        const url = `https://openapi.naver.com/v1/search/news.json?query=${encodedQuery}&display=10&sort=date`;
-
-        const options = {
-            method: 'get',
-            headers: {
-                'X-Naver-Client-Id': this.naverClientId,
-                'X-Naver-Client-Secret': this.naverClientSecret
-            },
-            muteHttpExceptions: true
-        };
-
-        try {
-            const response = UrlFetchApp.fetch(url, options);
-            const json = JSON.parse(response.getContentText());
-
-            let newsList = [];
-
-            if (json.items) {
-                json.items.forEach(item => {
-                    // HTML 태그 제거 (<b> 등)
-                    const cleanTitle = item.title.replace(/<[^>]*>?/gm, '');
-                    const cleanDesc = item.description.replace(/<[^>]*>?/gm, '');
-
-                    newsList.push({
-                        title: cleanTitle,
-                        link: item.link,
-                        description: cleanDesc,
-                        pubDate: item.pubDate
-                    });
-                });
-            }
-
-            Logger.log(`[뉴스 조회] 총 ${newsList.length}건 발견`);
-            console.log(newsList);
-            return newsList;
-        } catch (e) {
-            Logger.log('Naver Fetch Error: ' + e.toString());
-            return [];
-        }
-    }
 }
 
 
