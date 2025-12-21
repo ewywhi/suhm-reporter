@@ -13,15 +13,37 @@ class RealEstateReporter extends ReporterBase {
         this.dataPortalConfig = {
             decodingKey: 'e73c3a51d184a5fe3b3d5be01a73e3033bc57ea4f9887be7b4f8157c69462f52',
             lookBackMonths: 3,
-            target: { name: '오포e편한세상', code: '41610', dong: '신현동', apt: '오포e편한세상' },
-            benchmarks: [ // 비교군
-                { name: '분당 장안타운', code: '41135', dong: '분당동', apt: '장안' },
-                { name: '서현 시범단지', code: '41135', dong: '서현동', apt: '시범' },
-                { name: '야탑 장미마을', code: '41135', dong: '야탑동', apt: '장미'},
-            ],
-            substitutes: [ // 대체지
-                // { name: '태전지구', code: '41610', dong: '태전동', apt: '' }, // 태전동 전체
-                { name: '용인 모현(힐스테이트)', code: '41461', dong: '모현읍', apt: '힐스테이트' }
+            target: {
+                name: '신현 e편한세상', code: '41610', dong: '신현동', apt: '오포e편한세상',
+                desc: '분당과 맞닿은 태재고개 초입 대장주. 교통 체증이 단점이나 분당 접근성 최상.'
+            },
+            benchmarks: [
+                // 비교군 (분당권 - 선행지표)
+                {
+                    name: '분당 장안타운', code: '41135', dong: '분당동', apt: '장안',
+                    desc: '타겟 바로 윗동네. 이곳 20평대가 신현동 30평대의 천장(Ceiling) 역할'
+                },
+                {
+                    name: '서현 시범단지', code: '41135', dong: '서현동', apt: '시범',
+                    desc: '분당 시세를 리딩하는 곳. 시장 전체 흐름의 선행지표'
+                },
+                {
+                    name: '야탑 장미마을', code: '41135', dong: '야탑동', apt: '장미',
+                    desc: '분당 내 실거주 가성비 단지 (상대적 저가). "조금 더 무리해서 야탑 갈까?" 고민하는 실거주 대체재'
+                },
+                // 대체지 (경쟁 지역)
+                {
+                    name: '광주 태전지구', code: '41610', dong: '태전동', apt: '힐스테이트',
+                    desc: '계획도시라 도로가 넓고 쾌적. 신현동 교통 체증을 싫어하는 젊은 부부들이 비교'
+                },
+                {
+                    name: '광주역 e편한', code: '41610', dong: '역동', apt: 'e편한세상',
+                    desc: '경강선(광주역)이 있어 판교 출퇴근 확실. 가격 차이 좁혀지면 수요 쏠림'
+                },
+                {
+                    name: '용인 몬테로이', code: '41461', dong: '모현읍', apt: '힐스테이트',
+                    desc: '~3,700세대 입주 진행 중. 신현동 전세/매매 수요를 빨아들이는 공급 블랙홀'
+                }
             ]
         };
         this.tradeFetcher = new AptTradeFetcher(this.dataPortalConfig.decodingKey);
@@ -38,18 +60,15 @@ class RealEstateReporter extends ReporterBase {
 
         const benchmarks = {};
         config.benchmarks.forEach(b => {
-            benchmarks[b.name] = this.tradeFetcher.fetch(b, months);
-        });
-
-        const substitutes = {};
-        config.substitutes.forEach(s => {
-            substitutes[s.name] = this.tradeFetcher.fetch(s, months);
+            benchmarks[b.name] = {
+                desc: b.desc,
+                stats: this.tradeFetcher.fetch(b, months)
+            };
         });
 
         return {
             target: target,
             benchmarks: benchmarks,
-            substitutes: substitutes,
         };
     }
 
@@ -58,21 +77,20 @@ class RealEstateReporter extends ReporterBase {
         const config = this.dataPortalConfig;
 
         const targetText = this._formatStatsText(data.target);
-        const benchText = Object.keys(data.benchmarks).map(name =>
-            `[${name}]\n${this._formatStatsText(data.benchmarks[name])}`
-        ).join('\n');
-        const subText = Object.keys(data.substitutes).map(name =>
-            `[${name}]\n${this._formatStatsText(data.substitutes[name])}`
-        ).join('\n');
+        const benchText = Object.keys(data.benchmarks).map(name => {
+            const { desc, stats } = data.benchmarks[name];
+            return `**[${name}]** - ${desc}\n${this._formatStatsText(stats)}`;
+        }).join('\n\n');
 
         return `
 - 현재 날짜: **${today}**
 
-## 상황 설명
-
-나는 **실거주 목적**으로 집을 한 채 매수하려고 해. 투자가 아니라서 한 번만 잘 사면 되는데, **지금이 적기인지** 조언이 필요해.
+너는 대한민국 부동산 시장 분석가야. 
+내가 매수를 고려 중인 **타겟 아파트**에 대해, 비교군 및 대체지 데이터를 기반으로 매수 적기를 판단해 줘.
+각 데이터에는 내가 설정한 **'관계(Context)'** 설명이 포함되어 있어. 이 관계를 중심으로 데이터를 해석해야 해.
 
 타겟 아파트: **${config.target.name}** (경기 광주 신현동)
+> ${config.target.desc}
 
 ---
 ## 실거래 데이터 (최근 ${config.lookBackMonths}개월)
@@ -80,21 +98,11 @@ class RealEstateReporter extends ReporterBase {
 ### 타겟: ${config.target.name}
 ${targetText}
 
-### 비교군 (분당권 - 신현동 시세의 선행지표)
+### 비교 지역
 신현동은 분당과의 가격 갭을 메우며 **후행하는 경향**이 강해. 비교군 시세가 꺾이면 신현동은 더 빨리 식고, 급등하면 온기가 돌아.
+대체지 동향에 따라 신현동 수요가 이탈할 수도 있어.
 
-- **분당동 장안타운**: 태재고개 하나 사이의 바로 윗동네. 이곳 20평대 가격이 신현동 30평대의 **천장(Ceiling)** 역할
-- **서현동 시범단지**: 분당 시세를 리딩하는 곳. **시장 전체 흐름**의 선행지표
-- **야탑동 장미마을**: 분당 내 상대적 저가. "조금 더 무리해서 야탑 갈까?" 고민하는 **실거주 대체재**
 ${benchText}
-
-### 대체지 (신현동 수요를 뺏어가는 경쟁자들)
-신현동 대신 "차라리 여길 사겠다"고 선택할 수 있는 곳들. 이쪽 동향에 따라 신현동 수요가 이탈할 수 있어.
-
-- **태전지구**: 분당과는 멀지만 계획도시라 도로가 넓고 쾌적. 신현동 교통 체증을 싫어하는 젊은 부부들이 가장 많이 비교
-- **광주역세권(역동)**: 경강선이 있어 판교 출퇴근 확실. 가격 차이가 좁혀지면 수요가 이쪽으로 쏠림
-- **용인 모현(왕산지구)**: ~3,700세대 대단지 입주 진행 중. 신현동 전세/매매 수요를 빨아들이는 **공급 블랙홀**
-${subText}
 
 **[시나리오별 해석 가이드]**
 - 분당(장안)은 오르는데 신현동은 그대로? → **강력 매수 기회** (저평가). 시간차를 두고 결국 따라 올라감
@@ -111,10 +119,9 @@ ${this.searchKeywords.map(k => `- "${k}"`).join('\n')}
 ## 요청 사항
 
 1. **타겟 자체 분석**: 교통 호재, 거래량 추이 등을 고려한 경쟁력 판단
-2. **비교군 갭 분석**: 상급지 대비 갭이 벌어지는지(저평가) 좁혀지는지(고평가)
-3. **대체지 영향 분석**: 대체지 동향이 타겟 수요에 미칠 영향
-4. **결론**: 지금 시점에 **[매매 / 전세 / 월세 / 관망]** 중 어떤 전략이 적절한지, 그 이유와 함께 제시
-5. **참고 자료**: 분석에 참고한 뉴스/기사를 하단에 리스트업 (날짜, 제목, 링크 포함 / 최신순 정렬)
+2. **비교 지역 분석**: 각 비교 지역과의 관계를 고려해 타겟의 상대적 포지션 판단
+3. **결론**: 지금 시점에 **[매매 / 전세 / 월세 / 관망]** 중 어떤 전략이 적절한지, 그 이유와 함께 제시
+4. **참고 자료**: 분석에 참고한 뉴스/기사를 하단에 리스트업 (날짜, 제목, 링크 포함 / 최신순 정렬)
     `;
     }
 
