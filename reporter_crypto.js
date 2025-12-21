@@ -95,28 +95,38 @@ class CryptoReporter extends ReporterBase {
 [필수 검색 및 분석 지침 (Search Instructions)]
 **Google 검색 도구를 적극 활용하여 아래 내용을 리포트에 반드시 포함하십시오:**
 
-1. **BTC MVRV Ratio 확인 (필수 - 시장 과열도 판단 지표):**
-   - **주의:** "MVRV Ratio"를 검색하십시오. "MVRV Z-Score"는 다른 지표이므로 혼동하지 마십시오.
-   - **검색 대상:** 반드시 **비트코인(BTC)** MVRV Ratio를 검색하십시오. (알트코인 MVRV는 신뢰할 수 있는 실시간 데이터 소스가 없으므로, BTC MVRV를 암호화폐 시장 전반의 과열도 지표로 활용)
+1. **BTC MVRV 확인 (필수 - 시장 과열도 판단 지표):**
+   - **검색 우선순위:** "MVRV Ratio"를 우선 검색하고, Ratio를 찾지 못한 경우에만 "MVRV Z-Score"를 대안으로 활용하십시오.
+   - **검색 대상:** 반드시 **비트코인(BTC)** MVRV를 검색하십시오. (알트코인 MVRV는 신뢰할 수 있는 실시간 데이터 소스가 없으므로, BTC MVRV를 암호화폐 시장 전반의 과열도 지표로 활용)
    - **참고 사이트 (신뢰도 높은 순):**
-     - blockchain.com/explorer/charts/mvrv (무료, 실시간)
-     - bitcoinmagazinepro.com/charts/mvrv-zscore (차트 + MVRV 값 표시)
+     - blockchain.com/explorer/charts/mvrv (무료, 실시간, Ratio)
+     - bitcoinmagazinepro.com/charts/mvrv-zscore (Z-Score)
      - glassnode.com (유료지만 검색 결과에 값이 노출될 수 있음)
      - theblock.co/data/on-chain-metrics/bitcoin
    - **검색 쿼리 (순서대로 시도):**
      1) "Bitcoin MVRV ratio ${today}"
      2) "BTC MVRV ratio today"
-     3) "Bitcoin MVRV" site:blockchain.com OR site:bitcoinmagazinepro.com
-   - **교차 검증:** 가능하면 2개 이상의 소스에서 비슷한 MVRV 값이 나오는지 확인하여 신뢰도를 높이십시오.
-   - **날짜 검증 (중요):** 검색 결과에서 MVRV 수치를 발견하면, 해당 데이터의 **기준 날짜**를 반드시 확인하십시오.
-     - ✅ 기준 날짜가 **${today} 또는 최근 3일 이내**인 경우에만 리포트에 포함
-     - ❌ 기준 날짜가 3일 이상 지난 데이터이거나 날짜를 확인할 수 없는 경우: "⚠️ ${today} 기준 BTC MVRV Ratio 데이터를 확인할 수 없음 (최신 데이터 미발견)"이라고 정직하게 표기
-   - **표기 시 주의:** 리포트에 MVRV를 기재할 때 반드시 **"BTC MVRV"**라고 명시하고, 기준 날짜와 출처도 함께 표기하십시오.
-   - **MVRV 해석 기준:**
-     - MVRV < 1: 저평가 (매수 기회)
-     - MVRV 1~2: 적정 가치
-     - MVRV 2~3: 고평가 주의
-     - MVRV 3+: 과열/매도 신호
+     3) "Bitcoin MVRV Z-Score today" (Ratio를 못 찾은 경우)
+   - **⚠️ 날짜 검증 (매우 중요 - 반드시 준수):**
+     - 검색 결과에서 MVRV 수치를 발견하면, 해당 데이터의 **기준 날짜**를 반드시 확인하십시오.
+     - 오늘은 **${today}**입니다.
+     - ✅ **허용**: 기준 날짜가 ${today} 또는 어제(1일 전)인 데이터만 사용
+     - ❌ **거부**: 2일 이상 지난 데이터는 **절대 사용 금지**. 오래된 데이터를 사용하느니 차라리 생략하십시오.
+     - ❌ **거부 예시**: "12월 18일 기준" 데이터를 12월 22일 리포트에 사용하는 것은 금지
+   - **최신 데이터를 찾지 못한 경우:**
+     - 대시보드에 "⚠️ BTC MVRV: 최신 데이터(24시간 이내) 확보 실패"라고 정직하게 표기
+     - 점수 산정에서 MVRV 항목 제외
+   - **표기 시 주의:** 리포트에 MVRV를 기재할 때 **"BTC MVRV Ratio"** 또는 **"BTC MVRV Z-Score"**를 명확히 구분하여 표기하고, 기준 날짜와 출처도 함께 기재하십시오.
+   - **MVRV Ratio 해석 기준:**
+     - Ratio < 1: 저평가 (매수 기회)
+     - Ratio 1~2: 적정 가치
+     - Ratio 2~3: 고평가 주의
+     - Ratio 3+: 과열/매도 신호
+   - **MVRV Z-Score 해석 기준 (Ratio를 못 찾은 경우 대안):**
+     - Z-Score < 0: 저평가 (매수 기회)
+     - Z-Score 0~2: 적정 가치
+     - Z-Score 2~4: 고평가 주의
+     - Z-Score 4+: 과열/매도 신호
 
 2. **가격 변동 원인 파악:** 오늘 혹은 최근 24시간 내에 ${data.ticker} 가격에 영향을 미친 주요 뉴스(호재/악재, 규제, 해킹, 거시경제 이슈 등)를 검색하여 "시황 분석" 파트에 구체적으로 서술하십시오.
 
