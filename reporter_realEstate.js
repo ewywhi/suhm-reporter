@@ -9,64 +9,69 @@ class RealEstateReporter extends ReporterBase {
         this.title = `이사 계획 점검 리포트`;
         this.useSearch = true;
 
-        // 공공 데이터 포털
-        this.dataPortalDecodingKey = 'e73c3a51d184a5fe3b3d5be01a73e3033bc57ea4f9887be7b4f8157c69462f52';
-        this.aptService = new AptTransactionService(this.dataPortalDecodingKey);
-
-        this.dataLookBackMonths = 3; // 분석 기간
-        this.dataTarget = { name: '오포e편한세상', code: '41610', dong: '신현동', apt: '오포e편한세상' };
-        this.dataBenchmarks = [ // 비교군
-            { name: '분당 장안타운', code: '41135', dong: '분당동', apt: '장안' },
-            // { name: '서현 시범단지', code: '41135', dong: '서현동', apt: '시범' }
-        ];
-        this.dataSubstitues = [ // 대체지
-            // { name: '태전지구', code: '41610', dong: '태전동', apt: ''}, // 태전동 전체
-            { name: '용인 모현(힐스테이트)', code: '41461', dong: '모현읍', apt: '힐스테이트' }
-        ];
+        // 공공 데이터 포털 설정
+        this.dataPortalConfig = {
+            decodingKey: 'e73c3a51d184a5fe3b3d5be01a73e3033bc57ea4f9887be7b4f8157c69462f52',
+            lookBackMonths: 3,
+            target: { name: '오포e편한세상', code: '41610', dong: '신현동', apt: '오포e편한세상' },
+            benchmarks: [ // 비교군
+                { name: '분당 장안타운', code: '41135', dong: '분당동', apt: '장안' },
+                // { name: '서현 시범단지', code: '41135', dong: '서현동', apt: '시범' }
+            ],
+            substitutes: [ // 대체지
+                // { name: '태전지구', code: '41610', dong: '태전동', apt: '' }, // 태전동 전체
+                { name: '용인 모현(힐스테이트)', code: '41461', dong: '모현읍', apt: '힐스테이트' }
+            ]
+        };
+        this.aptService = new AptTransactionService(this.dataPortalConfig.decodingKey);
 
         // Gemini 검색 키워드 (useSearch=true 이므로 Gemini가 직접 검색)
         this.searchKeywords = ['경기 광주 신현동 교통 호재', '신현동 8호선 태재고개', '오포 e편한세상 시세'];
     }
 
     fetchData() {
-        // 실거래 데이터 수집 (뉴스는 Gemini 검색으로 대체 - useSearch=true)
-        const target = this.aptService.getAnalysis(this.dataTarget, 6);
+        const config = this.dataPortalConfig;
+        const months = config.lookBackMonths;
 
-        const abench = {};
-        this.dataBenchmarks.forEach(b => {
-            abench[b.name] = this.aptService.getAnalysis(b, 6);
+        // 실거래 데이터 수집 (뉴스는 Gemini 검색으로 대체 - useSearch=true)
+        const target = this.aptService.getAnalysis(config.target, months);
+
+        const benchmarks = {};
+        config.benchmarks.forEach(b => {
+            benchmarks[b.name] = this.aptService.getAnalysis(b, months);
         });
 
-        const sub = {};
-        this.dataSubstitues.forEach(s => {
-            sub[s.name] = this.aptService.getAnalysis(s, 6);
+        const substitutes = {};
+        config.substitutes.forEach(s => {
+            substitutes[s.name] = this.aptService.getAnalysis(s, months);
         });
 
         return {
             target: target,
-            benchmarks: abench,
-            substitues: sub,
+            benchmarks: benchmarks,
+            substitutes: substitutes,
         };
     }
 
     generatePrompt(data) {
         const today = Utilities.formatDate(new Date(), "GMT+9", "yyyy년 MM월 dd일");
+        const config = this.dataPortalConfig;
 
         const targetText = this._formatStatsText(data.target);
         const benchText = Object.keys(data.benchmarks).map(name =>
             `[${name}]\n${this._formatStatsText(data.benchmarks[name])}`
         ).join('\n');
-        const subText = Object.keys(data.substitues).map(name =>
-            `[${name}]\n${this._formatStatsText(data.substitues[name])}`
+        const subText = Object.keys(data.substitutes).map(name =>
+            `[${name}]\n${this._formatStatsText(data.substitutes[name])}`
         ).join('\n');
 
         return `
 - 현재 날짜: **${today}**
 
 너는 대한민국 부동산 시장 전문가야. 
-나의 '타겟 아파트(${this.dataTarget.name}, 경기 광주 신현동)' 매수 결정을 위해 아래 데이터를 기반으로 심층 분석 리포트를 작성해 줘.
+나의 '타겟 아파트(${config.target.name}, 경기 광주 신현동)' 매수 결정을 위해 아래 데이터를 기반으로 심층 분석 리포트를 작성해 줘.
 
-### 1. 시장 데이터 (최근 ${this.dataLookBackMonths}개월)
+### 1. 시장 데이터 (최근 ${config.lookBackMonths}개월)
 
 **(1) 타겟 단지 흐름**
 ${targetText}
