@@ -22,6 +22,8 @@ class ReporterBase {
         this.summaryModelName = 'gemini-flash-latest';
         this.reportModelName = 'gemini-flash-latest';
         this.useSearch = false;
+        this.reportTemperature = 0.2;
+        this.summaryTemperature = 0.2;
         this.reportRule = `\n
 **📚 참고 자료 (References)**
 - 마지막에 참고 문헌 챕터를 만들고 기사 제목과 링크를 적어줘
@@ -92,8 +94,8 @@ class ReporterBase {
             // --- 이하 공통 동작 ---
 
             // gemini
-            const reportResult = suhmlib.gemini_fetch(this.apiKey, prompt + '\n' + this.reportRule, this.reportModelName, this.useSearch);
-            const summaryResult = suhmlib.gemini_fetch(this.apiKey, reportResult.text + "\n" + this.summaryRule, this.summaryModelName, false);
+            const reportResult = suhmlib.gemini_fetch(this.apiKey, prompt + '\n' + this.reportRule, this.reportModelName, this.useSearch, this.reportTemperature);
+            const summaryResult = suhmlib.gemini_fetch(this.apiKey, reportResult.text + "\n" + this.summaryRule, this.summaryModelName, false, this.summaryTemperature);
             console.log('summary', summaryResult.text);
 
             // report id

@@ -5,6 +5,7 @@ class NasdaqTacticsReporter extends ReporterBase {
         // this.botToken = Telegram.Suhmplus.BotToken;
         // this.chatId = Telegram.Suhmplus.ChatId_미래;
         this.useSearch = true;
+        this.reportTemperature = 0.1;
 
         // Nasdaq
         this.type = ReportType.NasdaqTactics;
