@@ -1,6 +1,7 @@
 const ReportType = {
     None: 'none',
-    Nasdaq: 'Nasdaq',
+    NasdaqTactics: 'NasdaqTactics',
+    NasdaqStrategy: 'NasdaqStrategy',
     Crypto: 'Crypto',
     RealEstate: 'RealEstate',
 };
