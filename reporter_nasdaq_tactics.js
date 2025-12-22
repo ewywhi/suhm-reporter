@@ -2,8 +2,8 @@ class NasdaqTacticsReporter extends ReporterBase {
     constructor() {
         super();
 
-        // this.botToken = Telegram.Suhmplus.BotToken;
-        // this.chatId = Telegram.Suhmplus.ChatId_미래;
+        this.botToken = Telegram.Suhmplus.BotToken;
+        this.chatId = Telegram.Suhmplus.ChatId_미래;
         this.useSearch = true;
         this.reportTemperature = 0.1;
 
@@ -57,3 +57,8 @@ class NasdaqTacticsReporter extends ReporterBase {
 `;
     }
 }
+
+function _testNasdaqTacticsReporter() {
+    new NasdaqTacticsReporter().execute();
+}
+
