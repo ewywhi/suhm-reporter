@@ -31,6 +31,9 @@ class CryptoReporter extends ReporterBase {
         const candle = candles[candles.length - 1];
         const rsiArray = this._calculateRsiArray(candles, 14);
         const currentRsi = rsiArray[rsiArray.length - 1];
+        
+        // RSI 최근 5주 추세 (변화 방향 파악용)
+        const rsiTrend = rsiArray.slice(-5).map(v => v.toFixed(1));
 
         return {
             ticker: this.ticker,
@@ -42,6 +45,7 @@ class CryptoReporter extends ReporterBase {
             },
             indicators: {
                 rsi: currentRsi,
+                rsiTrend: rsiTrend, // 최근 5주 RSI 추세
                 divergence: this._analyzeDivergenceRaw(candles, rsiArray),
                 volumeRatio: this._calculateVolumeRatio(candles),
                 fngScore: this._fetchFngScore()
@@ -87,7 +91,8 @@ class CryptoReporter extends ReporterBase {
 아래 데이터는 API를 통해 실시간으로 수집된 정확한 수치이므로, 이 수치를 절대적인 기준으로 삼으십시오.
 1. 종목: ${data.ticker}
 2. 가격: ${data.price.close} (변동률: ${data.price.changeRate})
-3. RSI(14): ${data.indicators.rsi} (${this._getRsiStatus(data.indicators.rsi)})
+3. RSI(14): ${data.indicators.rsi.toFixed(1)} (${this._getRsiStatus(data.indicators.rsi)})
+   - 최근 5주 RSI 추세: [${data.indicators.rsiTrend.join(' → ')}] ${this._getRsiTrendStatus(data.indicators.rsiTrend)}
 4. 다이버전스: ${this._getDivergenceStatus(data.indicators.divergence)}
 5. 거래량: ${this._getVolumeStatus(data.indicators.volumeRatio)}
 6. 공포탐욕지수: ${this._getFngStatus(data.indicators.fngScore)}
@@ -309,6 +314,30 @@ class CryptoReporter extends ReporterBase {
         if (rsi >= 70) return `🔴 과매수(위험, 점수: ${rsiStr})`;
         if (rsi <= 30) return `🔵 과매도(기회, 점수: ${rsiStr})`;
         return `🟡 중립, 점수: ${rsiStr}`;
+    }
+
+    // RSI 추세 분석 (최근 5주 배열 기준)
+    _getRsiTrendStatus(rsiTrend) {
+        if (!rsiTrend || rsiTrend.length < 3) return '';
+        
+        const values = rsiTrend.map(v => parseFloat(v));
+        const first = values[0];
+        const last = values[values.length - 1];
+        const diff = last - first;
+        
+        // 연속 상승/하락 체크
+        let rising = 0, falling = 0;
+        for (let i = 1; i < values.length; i++) {
+            if (values[i] > values[i-1]) rising++;
+            else if (values[i] < values[i-1]) falling++;
+        }
+        
+        if (rising >= 3) return `📈 상승 추세 (+${diff.toFixed(1)})`;
+        if (falling >= 3) return `📉 하락 추세 (${diff.toFixed(1)})`;
+        if (Math.abs(diff) > 10) {
+            return diff > 0 ? `↗️ 상승 중 (+${diff.toFixed(1)})` : `↘️ 하락 중 (${diff.toFixed(1)})`;
+        }
+        return `➡️ 횡보 중`;
     }
 
     _getDivergenceStatus(data) {
