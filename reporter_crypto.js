@@ -28,16 +28,31 @@ class CryptoReporter extends ReporterBase {
             throw new Error(`${this.ticker} 캔들 데이터를 불러올 수 없습니다.`);
         }
 
+        // 마지막 캔들이 완성되지 않은 경우(7일 미만) 정보 기록
+        // 주봉은 월요일 00:00 UTC 시작, 다음 월요일 00:00 UTC 종료
+        const lastCandle = candles[candles.length - 1];
+        const incompleteInfo = this._isIncompleteWeeklyCandle(lastCandle);
+        if (incompleteInfo) {
+            console.log(`마지막 주봉이 불완전함 (${incompleteInfo.daysPassed}일차)`);
+        }
+
         const candle = candles[candles.length - 1];
         const rsiArray = this._calculateRsiArray(candles, 14);
         const currentRsi = rsiArray[rsiArray.length - 1];
-        
+
         // RSI 최근 5주 추세 (변화 방향 파악용)
         const rsiTrend = rsiArray.slice(-5).map(v => v.toFixed(1));
 
         return {
             ticker: this.ticker,
             date: new Date().toISOString(),
+            candleInfo: {
+                isIncomplete: incompleteInfo !== false,
+                daysPassed: incompleteInfo ? incompleteInfo.daysPassed : 7,
+                note: incompleteInfo
+                    ? `현재 주봉은 ${incompleteInfo.daysPassed}일차 (7일 중)`
+                    : '완성된 주봉'
+            },
             price: {
                 close: candle.close.toLocaleString() + " KRW",
                 open: candle.open.toLocaleString() + " KRW",
@@ -94,8 +109,9 @@ class CryptoReporter extends ReporterBase {
 3. RSI(14): ${data.indicators.rsi.toFixed(1)} (${this._getRsiStatus(data.indicators.rsi)})
    - 최근 5주 RSI 추세: [${data.indicators.rsiTrend.join(' → ')}] ${this._getRsiTrendStatus(data.indicators.rsiTrend)}
 4. 다이버전스: ${this._getDivergenceStatus(data.indicators.divergence)}
-5. 거래량: ${this._getVolumeStatus(data.indicators.volumeRatio)}
+5. 거래량: ${this._getVolumeStatus(data.indicators.volumeRatio)}${data.candleInfo.isIncomplete ? ` ⚠️ 주의: 현재 ${data.candleInfo.daysPassed}일차 데이터만 반영됨` : ''}
 6. 공포탐욕지수: ${this._getFngStatus(data.indicators.fngScore)}
+7. 주봉 상태: ${data.candleInfo.isIncomplete ? `⚠️ 불완전 (${data.candleInfo.daysPassed}/7일) - 거래량·등락률 등은 아직 ${data.candleInfo.daysPassed}일치만 반영. 남은 ${7 - data.candleInfo.daysPassed}일간 추가 변동 가능` : '✅ 완성된 주봉'}
 
 [필수 검색 및 분석 지침 (Search Instructions)]
 **Google 검색 도구를 적극 활용하여 아래 내용을 리포트에 반드시 포함하십시오:**
@@ -172,6 +188,22 @@ class CryptoReporter extends ReporterBase {
     }
 
     // --- Helper Methods ---
+
+    // 마지막 주봉이 불완전한지 확인 (7일 미만)
+    // 주봉은 월요일 00:00 UTC 시작 -> 다음 월요일 00:00 UTC 종료
+    _isIncompleteWeeklyCandle(candle) {
+        const candleStartTime = new Date(candle.timestamp);
+        const now = new Date();
+
+        // 캔들 시작일로부터 경과한 일수 계산
+        const daysPassed = Math.floor((now - candleStartTime) / (1000 * 60 * 60 * 24));
+
+        // 7일 미만이면 불완전
+        if (daysPassed < 7) {
+            return { daysPassed: daysPassed, candleStart: candleStartTime.toISOString() };
+        }
+        return false;
+    }
 
     // Upbit 주봉 캔들 배열 가져오기 (과거 -> 최신 순)
     _fetchUpbitWeeklyCandles(ticker, count) {
@@ -319,19 +351,19 @@ class CryptoReporter extends ReporterBase {
     // RSI 추세 분석 (최근 5주 배열 기준)
     _getRsiTrendStatus(rsiTrend) {
         if (!rsiTrend || rsiTrend.length < 3) return '';
-        
+
         const values = rsiTrend.map(v => parseFloat(v));
         const first = values[0];
         const last = values[values.length - 1];
         const diff = last - first;
-        
+
         // 연속 상승/하락 체크
         let rising = 0, falling = 0;
         for (let i = 1; i < values.length; i++) {
-            if (values[i] > values[i-1]) rising++;
-            else if (values[i] < values[i-1]) falling++;
+            if (values[i] > values[i - 1]) rising++;
+            else if (values[i] < values[i - 1]) falling++;
         }
-        
+
         if (rising >= 3) return `📈 상승 추세 (+${diff.toFixed(1)})`;
         if (falling >= 3) return `📉 하락 추세 (${diff.toFixed(1)})`;
         if (Math.abs(diff) > 10) {
