@@ -26,22 +26,33 @@ class ReporterBase {
         this.summaryTemperature = 0.2;
         this.reportRule = `\n
 **📚 참고 자료 (References)**
-- 마지막에 참고 문헌 챕터를 만들고 기사 제목과 링크를 적어줘
-- 검색에 활용된 주요 기사나 리포트의 **'정확한 제목'**과 **'링크(URL)'**를 리스트로 작성하십시오.
-- 기사 제목에서 마크다운 문법과 충돌하는 내용은 제거해야 함.
-- 형식: - YYYY-MM-DD, [기사 제목](URL)
-- 사이트 이름(예: naver.com) 대신 기사의 헤드라인을 제목으로 쓰십시오.
+* 마지막에 참고 문헌 챕터를 만들고, 분석에 인용된 모든 기사와 리포트의 출처를 이 섹션에 모아서 정리할 것.
+* 작성 형식: "- YYYY-MM-DD, [기사 제목](URL)"
+* ★중요 문법 지침★:
+  1. 기사 제목 안에 있는 대괄호 '[', ']'는 마크다운 링크 문법과 충돌하므로 반드시 소괄호 '(', ')'로 바꾸거나 제거할 것.
+     - (Bad): - 2025-12-20, [[속보] 엔비디아 급등](http://...)
+     - (Good): - 2025-12-20, [(속보) 엔비디아 급등](http://...)
+  2. 사이트 이름(예: naver.com) 대신 '기사의 실제 헤드라인'을 제목으로 쓸 것.
+  3. 링크(URL)가 없는 지식은 출처로 적지 말 것.
 `;
         this.summaryRule = `
-    핵심 내용 3가지를 텔레그램 메시지용으로 요약해줘.
-[엄격한 작성 규칙]
-- **절대 마크다운 문법(**, ---, ## 등)을 사용하지 마시오.**
-- 강조가 필요하면 반드시 HTML 태그인 <b>강조할 단어</b> 형식을 사용하시오.
-- 수평선(---)이나 제목(#) 문법을 쓰지 마시오.
-- 표 대신 리스트(글머리 기호)로 요약하시오.
-- 첫 줄에 리포트의 결론(매수/매도/관망)을 한 문장으로 명확히 적고, 한 줄 띄운 뒤, 
-- 핵심 근거 3가지를 글머리 기호(•)를 사용하여 개조식으로 작성하시오.
-- 문장은 간결하게 끝맺을 것 (~함, ~임).
+[텔레그램 알림용 초압축 요약 요청]
+
+너는 바쁜 투자자를 위해 긴 리포트를 스마트폰 화면 하나에 들어오도록 요약하는 '브리핑 비서'야.
+아래 [상세 리포트] 내용을 바탕으로, **텔레그램 메시지용 요약본**을 작성해 줘.
+
+[엄격한 작성 규칙 (Strict Constraints)]
+1. **마크다운 금지:** **, ##, --- 등의 마크다운 문법을 절대 사용하지 마시오. (메시지가 깨짐)
+2. **강조:** 강조할 단어는 반드시 HTML 태그인 <b>단어</b> 형식을 사용하시오.
+3. **구조 (순서 엄수):**
+   - **제목:** 📊 [리포트 제목] (이모지 포함)
+   - **결론 (한 문장):** 최종 결론을 명확히 서술. 한 줄 띄우기.
+   - **핵심 근거 (3가지):**
+     * 글머리 기호(•) 사용.
+     * 각 항목은 "~함", "~임"으로 간결하게 끝낼 것.
+     * 가장 중요한 타겟에 대한 구체적 액션과 수치를 포함할 것
+
+** 아래는 상세 리포트 전문
 `;
 
         // have to override
@@ -95,7 +106,7 @@ class ReporterBase {
 
             // gemini
             const reportResult = suhmlib.gemini_fetch(this.apiKey, prompt + '\n' + this.reportRule, this.reportModelName, this.useSearch, this.reportTemperature);
-            const summaryResult = suhmlib.gemini_fetch(this.apiKey, reportResult.text + "\n" + this.summaryRule, this.summaryModelName, false, this.summaryTemperature);
+            const summaryResult = suhmlib.gemini_fetch(this.apiKey, this.summaryRule + "\n\n" + + reportResult.text, this.summaryModelName, false, this.summaryTemperature);
             console.log('summary', summaryResult.text);
 
             // report id
