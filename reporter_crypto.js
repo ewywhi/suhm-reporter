@@ -411,6 +411,18 @@ function _testCryptoPrompt() {
     console.log('prompt', reporter.generatePrompt(reporter.fetchData()));
 }
 
-function _testCryptoReporter() {
-    new CryptoReporter('ETH').execute();
+function ReportETH() {
+    new CryptoReporter("ETH").execute();
+}
+
+function MonitorETH() {
+    new CryptoReporter("ETH").monitor();
+}
+
+function ReportBTC() {
+    new CryptoReporter("BTC").execute();
+}
+
+function MonitorBTC() {
+    new CryptoReporter("BTC").monitor();
 }

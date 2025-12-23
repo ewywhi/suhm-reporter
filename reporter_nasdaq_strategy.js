@@ -64,7 +64,6 @@ class NasdaqStrategyReporter extends ReporterBase {
    }
 }
 
-function _testNasdaqStrategyReporter() {
+function ReportNasdaqStrategyReporter() {
    new NasdaqStrategyReporter().execute();
 }
-

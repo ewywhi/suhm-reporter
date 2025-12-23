@@ -179,27 +179,3 @@ class TokenTracker {
         return JSON.stringify(this.usageData);
     }
 }
-
-function ReportNasdaq() {
-    new CryptoReporter("ETH").execute();
-}
-
-function ReportETH() {
-    new CryptoReporter("ETH").execute();
-}
-
-function MonitorETH() {
-    new CryptoReporter("ETH").monitor();
-}
-
-function ReportBTC() {
-    new CryptoReporter("BTC").execute();
-}
-
-function MonitorBTC() {
-    new CryptoReporter("BTC").monitor();
-}
-
-function ReportRealEstate() {
-    new RealEstateReporter().execute();
-}

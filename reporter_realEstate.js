@@ -274,7 +274,7 @@ function _testRealEstatePrompt() {
     console.log('prompt', reporter.generatePrompt(reporter.fetchData()));
 }
 
-function _testRealEstateReporter() {
+function ReportRealEstate() {
     new RealEstateReporter().execute();
 }
 
@@ -282,10 +282,3 @@ function _testRealEstateReporter() {
 //     reporter = new RealEstateReporter();
 //     sendTelegram(reporter.botToken, reporter.chatId, `알림 테스트`);
 // }
-
-
-
-
-
-
-

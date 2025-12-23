@@ -1,21 +1,21 @@
 class NasdaqTacticsReporter extends ReporterBase {
-    constructor() {
-        super();
+   constructor() {
+      super();
 
-        this.botToken = Telegram.Suhmplus.BotToken;
-        this.chatId = Telegram.Suhmplus.ChatId_미래;
-        this.useSearch = true;
-        this.reportTemperature = 0.1;
+      this.botToken = Telegram.Suhmplus.BotToken;
+      this.chatId = Telegram.Suhmplus.ChatId_미래;
+      this.useSearch = true;
+      this.reportTemperature = 0.1;
 
-        // Nasdaq
-        this.type = ReportType.NasdaqTactics;
-        this.title = "나스닥 보유주 정밀 진단";
-    }
+      // Nasdaq
+      this.type = ReportType.NasdaqTactics;
+      this.title = "나스닥 보유주 정밀 진단";
+   }
 
-    generatePrompt(data) {
-        const today = Utilities.formatDate(new Date(), "GMT+9", "yyyy년 MM월 dd일");
+   generatePrompt(data) {
+      const today = Utilities.formatDate(new Date(), "GMT+9", "yyyy년 MM월 dd일");
 
-        return `
+      return `
 [보유 기술주 정밀 진단: 보수적 중기 투자자용 (v2.0)]
 
 1. 기본 설정:
@@ -55,10 +55,9 @@ class NasdaqTacticsReporter extends ReporterBase {
    - [추천 행동] 구체적 % 제시
    - [근거] IT 종사자용 한 줄 요약
 `;
-    }
+   }
 }
 
-function _testNasdaqTacticsReporter() {
-    new NasdaqTacticsReporter().execute();
+function ReportNasdaqTacticsReporter() {
+   new NasdaqTacticsReporter().execute();
 }
-
