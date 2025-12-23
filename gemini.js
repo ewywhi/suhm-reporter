@@ -1,4 +1,59 @@
 
+const GeminiPriceTable = {
+    'flash': { input: 0.075, output: 0.30 }, // 1.5 Flash 계열 공통
+    'pro': { input: 3.50, output: 10.50 }, // 1.5 Pro 계열 공통
+    'default': { input: 0, output: 0 }
+}
+
+// 토큰 사용량 집계
+class GeminiTokenTracker {
+    constructor() {
+        this.usageData = {}; // 데이터 저장소
+    }
+
+    add(modelName, usage) {
+        if (!usage) return;
+
+        if (!this.usageData[modelName]) {
+            this.usageData[modelName] = { input: 0, output: 0 };
+        }
+
+        this.usageData[modelName].input += (usage.promptTokenCount || 0);
+        this.usageData[modelName].output += (usage.candidatesTokenCount || 0);
+    }
+
+    getUsage() {
+        return JSON.stringify(this.usageData);
+    }
+
+    getCost() {
+        let totalCost = 0;
+
+        for (const [modelName, tokens] of Object.entries(this.usageData)) {
+            // 모델명에서 가격 정책 찾기 (패턴 매칭)
+            const pricePolicy = this._getPricePolicy(modelName);
+
+            const inputCost = (tokens.input / 1000000) * pricePolicy.input;
+            const outputCost = (tokens.output / 1000000) * pricePolicy.output;
+
+            totalCost += (inputCost + outputCost);
+        }
+
+        return totalCost;
+    }
+
+    _getPricePolicy(modelName) {
+        const name = modelName.toLowerCase();
+        if (name.includes('flash')) return GeminiPriceTable['flash'];
+        if (name.includes('pro')) return GeminiPriceTable['pro'];
+        return GeminiPriceTable['default'];
+    }
+}
+
+function newGeminiTokenTracker(/*...args*/) {
+    return new GeminiTokenTracker(/*...args*/);
+}
+
 // Gemini API 호출
 function gemini_fetch(apiKey, prompt, modelName = 'gemini-flash-latest', useSearch = false, temperature = 0.2) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;

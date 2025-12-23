@@ -102,7 +102,7 @@ class ReporterBase {
             const prompt = this.generatePrompt(data).trimStart();
             console.log('prompt', prompt);
 
-            // --- 이하 공통 동작 ---
+            // --- 이하 공통 로직 ---
 
             // gemini
             const reportResult = suhmlib.gemini_fetch(this.apiKey, prompt + '\n' + this.reportRule, this.reportModelName, this.useSearch, this.reportTemperature);
@@ -120,14 +120,14 @@ class ReporterBase {
             console.log('reportUrl', reportUrl);
 
             // usage
-            const tracker = new TokenTracker();
+            const tracker = suhmlib.newGeminiTokenTracker();
             tracker.add(this.reportModelName, reportResult.usage);
             tracker.add(this.summaryModelName, summaryResult.usage);
-            console.log('usage', tracker.toJson());
+            console.log(`tracker usage: ${tracker.getUsage()}, estimated price: $${tracker.getCost().toFixed(4)}`);
 
             // save
             const sheet = SpreadsheetApp.openById(this.sheetId).getSheetByName(this.sheetName);
-            sheet.appendRow([reportId, new Date(), reportResult.text, this.type, summaryResult.text, reportUrl, prompt, tracker.toJson()]);
+            sheet.appendRow([reportId, new Date(), reportResult.text, this.type, summaryResult.text, reportUrl, prompt, tracker.getUsage(), tracker.getCost().toFixed(4)]);
 
             // send
             const htmlSummary = suhmlib.string_md_to_html(summaryResult.text);
@@ -158,24 +158,7 @@ class ReporterBase {
     }
 }
 
-// 토큰 사용량 집계
-class TokenTracker {
-    constructor() {
-        this.usageData = {}; // 데이터 저장소
-    }
-
-    add(modelName, usage) {
-        if (!usage) return;
-
-        if (!this.usageData[modelName]) {
-            this.usageData[modelName] = { input: 0, output: 0 };
-        }
-
-        this.usageData[modelName].input += (usage.promptTokenCount || 0);
-        this.usageData[modelName].output += (usage.candidatesTokenCount || 0);
-    }
-
-    toJson() {
-        return JSON.stringify(this.usageData);
-    }
+function _testGeminiTokenTracker() {
+    let tracker = suhmlib.newGeminiTokenTracker();
+    console.log(`tracker usage: ${tracker.getUsage()}, estimated price: $${tracker.getCost().toFixed(4)}`);
 }
