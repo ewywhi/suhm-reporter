@@ -105,15 +105,20 @@ class ReporterBase {
             const data = injectedData || this.fetchData();
             if (!data) throw new Error("데이터를 가져올 수 없습니다.");
 
-            const prompt = this.generatePrompt(data).trimStart();
-            console.log('prompt', prompt);
+            const reportPrompt = this.generatePrompt(data).trimStart() + '\n\n' + this.reportRule;
+            console.log('reportPrompt', reportPrompt);
 
             // --- 이하 공통 로직 ---
 
             // gemini
-            const reportResult = suhmlib.gemini_fetch(this.apiKey, prompt + '\n' + this.reportRule, this.reportModelName, this.useSearch, this.reportTemperature);
-            const summaryResult = suhmlib.gemini_fetch(this.apiKey, this.summaryRule + "\n\n" + + reportResult.text, this.summaryModelName, false, this.summaryTemperature);
-            console.log('summary', summaryResult.text);
+            const reportResult = suhmlib.gemini_fetch(this.apiKey, reportPrompt, this.reportModelName, this.useSearch, this.reportTemperature);
+            console.log('reportResult', reportResult.text);
+
+            const summaryPrompt = this.summaryRule.trimStart() + '\n\n' + reportResult.text;
+            console.log('summaryPrompt', summaryPrompt);
+
+            const summaryResult = suhmlib.gemini_fetch(this.apiKey, summaryPrompt, this.summaryModelName, false, this.summaryTemperature);
+            console.log('summaryResult', summaryResult.text);
 
             // report id
             const dateStr = Utilities.formatDate(new Date(), "GMT+9", "yyyyMMdd");
@@ -133,7 +138,7 @@ class ReporterBase {
 
             // save
             const sheet = SpreadsheetApp.openById(this.sheetId).getSheetByName(this.sheetName);
-            sheet.appendRow([reportId, new Date(), reportResult.text, this.type, summaryResult.text, reportUrl, prompt, tracker.getUsage(), tracker.getCost().toFixed(4)]);
+            sheet.appendRow([reportId, new Date(), reportResult.text, this.type, summaryPrompt, summaryResult.text, reportUrl, reportPrompt, tracker.getUsage(), tracker.getCost().toFixed(4)]);
 
             // send
             const htmlSummary = suhmlib.string_md_to_html(summaryResult.text);
