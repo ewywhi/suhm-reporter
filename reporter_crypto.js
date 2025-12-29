@@ -22,21 +22,23 @@ class CryptoReporter extends ReporterBase {
 
     fetchData() {
         // 캔들 데이터 확보 (최근 60주 - RSI, 볼륨, 다이버전스 분석용)
-        const candles = this._fetchUpbitWeeklyCandles(this.ticker, 60);
+        let candles = this._fetchUpbitWeeklyCandles(this.ticker, 60);
 
         if (!candles || candles.length === 0) {
             throw new Error(`${this.ticker} 캔들 데이터를 불러올 수 없습니다.`);
         }
 
-        // 마지막 캔들이 완성되지 않은 경우(7일 미만) 정보 기록
+        // 마지막 캔들이 완성되지 않은 경우(7일 미만) 삭제
         // 주봉은 월요일 00:00 UTC 시작, 다음 월요일 00:00 UTC 종료
         const lastCandle = candles[candles.length - 1];
         const incompleteInfo = this._isIncompleteWeeklyCandle(lastCandle);
         if (incompleteInfo) {
-            console.log(`마지막 주봉이 불완전함 (${incompleteInfo.daysPassed}일차)`);
+            console.log(`마지막 주봉이 불완전함 (${incompleteInfo.daysPassed}일차) - 삭제 후 이전 주봉 사용`);
+            candles.pop(); // 미완성 주봉 삭제
         }
 
         const candle = candles[candles.length - 1];
+        const candleDate = new Date(candle.timestamp);
         const rsiArray = this._calculateRsiArray(candles, 14);
         const currentRsi = rsiArray[rsiArray.length - 1];
 
@@ -47,11 +49,8 @@ class CryptoReporter extends ReporterBase {
             ticker: this.ticker,
             date: new Date().toISOString(),
             candleInfo: {
-                isIncomplete: incompleteInfo !== false,
-                daysPassed: incompleteInfo ? incompleteInfo.daysPassed : 7,
-                note: incompleteInfo
-                    ? `현재 주봉은 ${incompleteInfo.daysPassed}일차 (7일 중)`
-                    : '완성된 주봉'
+                lastCompletedWeek: `${candleDate.getFullYear()}년 ${candleDate.getMonth() + 1}월 ${candleDate.getDate()}일 주봉`,
+                timestamp: candle.timestamp
             },
             price: {
                 close: candle.close.toLocaleString() + " KRW",
@@ -105,13 +104,13 @@ class CryptoReporter extends ReporterBase {
 [제공된 정량 데이터 (Fact)]
 아래 데이터는 API를 통해 실시간으로 수집된 정확한 수치이므로, 이 수치를 절대적인 기준으로 삼으십시오.
 1. 종목: ${data.ticker}
-2. 가격: ${data.price.close} (변동률: ${data.price.changeRate})
-3. RSI(14): ${data.indicators.rsi.toFixed(1)} (${this._getRsiStatus(data.indicators.rsi)})
+2. 분석 기준 주봉: ${data.candleInfo.lastCompletedWeek}
+3. 가격: ${data.price.close} (변동률: ${data.price.changeRate})
+4. RSI(14): ${data.indicators.rsi.toFixed(1)} (${this._getRsiStatus(data.indicators.rsi)})
    - 최근 5주 RSI 추세: [${data.indicators.rsiTrend.join(' → ')}] ${this._getRsiTrendStatus(data.indicators.rsiTrend)}
-4. 다이버전스: ${this._getDivergenceStatus(data.indicators.divergence)}
-5. 거래량: ${this._getVolumeStatus(data.indicators.volumeRatio)}${data.candleInfo.isIncomplete ? ` ⚠️ 주의: 현재 ${data.candleInfo.daysPassed}일차 데이터만 반영됨` : ''}
-6. 공포탐욕지수: ${this._getFngStatus(data.indicators.fngScore)}
-7. 주봉 상태: ${data.candleInfo.isIncomplete ? `⚠️ 불완전 (${data.candleInfo.daysPassed}/7일) - 거래량·등락률 등은 아직 ${data.candleInfo.daysPassed}일치만 반영. 남은 ${7 - data.candleInfo.daysPassed}일간 추가 변동 가능` : '✅ 완성된 주봉'}
+5. 다이버전스: ${this._getDivergenceStatus(data.indicators.divergence)}
+6. 거래량: ${this._getVolumeStatus(data.indicators.volumeRatio)}
+7. 공포탐욕지수: ${this._getFngStatus(data.indicators.fngScore)}
 
 [필수 검색 및 분석 지침 (Search Instructions)]
 **Google 검색 도구를 적극 활용하여 아래 내용을 리포트에 반드시 포함하십시오:**
