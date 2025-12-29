@@ -45,6 +45,14 @@ class CryptoReporter extends ReporterBase {
         // RSI 최근 5주 추세 (변화 방향 파악용)
         const rsiTrend = rsiArray.slice(-5).map(v => v.toFixed(1));
 
+        // 거래량 최근 5주 추이 (평균 대비 비율로 표시)
+        const recentCandles = candles.slice(-5);
+        const avgVolume = candles.slice(-25, -5).reduce((sum, c) => sum + c.volume, 0) / 20; // 5주 전~25주 전 평균
+        const volumeTrend = recentCandles.map(c => {
+            const ratio = avgVolume > 0 ? (c.volume / avgVolume) : 1;
+            return (ratio * 100).toFixed(0) + '%';
+        });
+
         return {
             ticker: this.ticker,
             date: new Date().toISOString(),
@@ -62,6 +70,7 @@ class CryptoReporter extends ReporterBase {
                 rsiTrend: rsiTrend, // 최근 5주 RSI 추세
                 divergence: this._analyzeDivergenceRaw(candles, rsiArray),
                 volumeRatio: this._calculateVolumeRatio(candles),
+                volumeTrend: volumeTrend, // 최근 5주 거래량 추이
                 fngScore: this._fetchFngScore()
             }
         };
@@ -110,6 +119,7 @@ class CryptoReporter extends ReporterBase {
    - 최근 5주 RSI 추세: [${data.indicators.rsiTrend.join(' → ')}] ${this._getRsiTrendStatus(data.indicators.rsiTrend)}
 5. 다이버전스: ${this._getDivergenceStatus(data.indicators.divergence)}
 6. 거래량: ${this._getVolumeStatus(data.indicators.volumeRatio)}
+   - 최근 5주 거래량 추이 (평균 대비): [${data.indicators.volumeTrend.join(' → ')}]
 7. 공포탐욕지수: ${this._getFngStatus(data.indicators.fngScore)}
 
 [필수 검색 및 분석 지침 (Search Instructions)]
